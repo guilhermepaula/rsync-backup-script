@@ -2,7 +2,13 @@
 # Desenvolvido por:
 # Hamacker <sirhamacker em gmail.com>
 # Guilherme Paula <guilhermepaula em gmail.com>
-# Licença: GNU/GPL 3
+#
+# Esse script utiliza o programa rsync <http://www.samba.org/rsync/>
+# para realizar sincronização de diretórios.
+# É útil para fazer backup em um HD externo USB ou até
+# mesmo um outro HD na máquina.
+#
+# Distribuído pela licença GNU/GPL v3
 
 Principal()
 {
@@ -13,6 +19,7 @@ echo
 echo "Use:"
 echo "s		Scan da partição"
 echo "r		Iniciar o backup"
+echo "l		Limpar log"
 echo "q		Sair"
 echo 
 echo "Digite a opção desejada:"
@@ -22,30 +29,36 @@ read opcao
 case $opcao in
 	s) Scandisk				;;
 	r) Montar				;;
+	l) Limpar				;;
 	q) exit					;;
 	*) echo "Opção Inválida" ; Principal 	;;
 esac
 }
 
-# Caso seja unidades remotas com o openssh-server instalado:
-#backup_origem="root@192.168.1.2:/home/fulano"
-
 Scandisk()
 {
+	# Executar o scandisk baseado no uuid do disco
 	sudo fsck -p /dev/disk/by-uuid/$backup_disco
 	Principal
 }
 
 Montar()
 {
-	backup_origem="/home/$USER"
+	echo "Digite o diretório que será feito o backup. Padrão: $HOME"
+	read $backup_origem
+	if ! [ "$backup_origem" ]
+	then
+		echo "definindo diretório de backup $HOME"
+		backup_origem="/home/$USER"
+	fi
 
 	# Altere o uuid do disco destino:
 	# para saber, digite
 	# sudo vol_id --uuid /dev/sda1
 	backup_disco="c8c0a94d-b10e-41b1-a00b-06f07a78c9a2"
 	# se não existe, então avisar:
-	if ! [ -e "/dev/disk/by-uuid/$backup_disco" ] ; then
+	if ! [ -e "/dev/disk/by-uuid/$backup_disco" ]
+	then
 		echo "O disco [$backup_disco] não foi encontrado no sistema."
 		exit 2;
 	fi
@@ -53,7 +66,7 @@ Montar()
 	# Diretório onde esse disco está montado:
 	backup_montagem="/media/backup"
 
-	# se não existe, então criar:
+	# Ee não existe, então criar:
 	if ! [ -d $backup_montagem ]
 	then
 		sudo mkdir -p $backup_montagem
@@ -104,8 +117,8 @@ Executar()
 	fi
 
 	# Logs das mudanças
-	# ex: no formato AAAA-MM-DD
-	local logs="/home/$USER/outros/backup_script/logs/`date +%F`.log"
+	# ex: no formato AAAA-MM-DD.log
+	logs="/home/$USER/outros/backup_script/logs/`date +%F`.log"
 
 	# Fazendo backup:
 	# -a: preserva características do arquivo (permissão, data/hora, etc)
@@ -144,5 +157,20 @@ Desmontar()
 			echo "Isso terá de ser feito manualmente."
 		fi
 	fi
+}
+
+Limpar()
+{
+	
+	echo "Deseja realmente remover todo o histórico? (Y/N)"
+	read $confirmacao
+	# se confirmação = Y
+	if [ $confirmacao -eq 'Y' ]
+	then
+		rm /home/$USER/outros/backup_script/logs/*.log
+	else
+		echo "Não foi possível limpar o histórico."
+	fi
+	Principal
 }
 Principal
