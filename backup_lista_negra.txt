@@ -1,0 +1,10 @@
+downloads/gerenciador/
+# outros/fretsonfire/
+# vmware/
+# outros/virtual_pc/
+*~
+.Trash/
+.thumbnails/
+.gvfs
+.local/share/Trash/
+.mozilla/firefox/**/Cache
